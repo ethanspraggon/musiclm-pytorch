@@ -1,6 +1,10 @@
-import math
+
+
+#import functions
+# import math
 from functools import wraps, partial
 
+#choose correct version of torch to implement
 import torch
 import torch.nn.functional as F
 from torch import nn, einsum
@@ -52,6 +56,9 @@ def once(fn):
 print_once = once(print)
 
 # tensor functions
+
+def math():
+    print("math")
 
 def log(t, eps = 1e-20):
     return torch.log(t.clamp(min = eps))
