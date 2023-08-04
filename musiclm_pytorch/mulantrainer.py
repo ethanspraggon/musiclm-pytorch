@@ -37,3 +37,45 @@ loss.backward()
 embeds = mulan.get_audio_latents(wavs)  # during training
 
 embeds = mulan.get_text_latents(texts)  # during inference
+
+from musiclm_pytorch import MuLaNEmbedQuantizer
+
+# setup the quantizer with the namespaced conditioning embeddings, unique per quantizer as well as namespace (per transformer)
+
+quantizer = MuLaNEmbedQuantizer(
+    mulan = mulan,                          # pass in trained mulan from above
+    conditioning_dims = (1024, 1024, 1024), # say all three transformers have model dimensions of 1024
+    namespaces = ('semantic', 'coarse', 'fine')
+)
+
+# now say you want the conditioning embeddings for semantic transformer
+
+wavs = torch.randn(2, 1024)
+conds = quantizer(wavs = wavs, namespace = 'semantic') # (2, 8, 1024) - 8 is number of quantizers
+
+import torch
+from audiolm_pytorch import HubertWithKmeans, SemanticTransformer, SemanticTransformerTrainer
+
+wav2vec = HubertWithKmeans(
+    checkpoint_path = './hubert/hubert_base_ls960.pt',
+    kmeans_path = './hubert/hubert_base_ls960_L9_km500.bin'
+)
+
+semantic_transformer = SemanticTransformer(
+    num_semantic_tokens = wav2vec.codebook_size,
+    dim = 1024,
+    depth = 6,
+    audio_text_condition = True      # this must be set to True (same for CoarseTransformer and FineTransformers)
+).cuda()
+
+trainer = SemanticTransformerTrainer(
+    transformer = semantic_transformer,
+    wav2vec = wav2vec,
+    audio_conditioner = quantizer,   # pass in the MulanEmbedQuantizer instance above
+    folder ='/path/to/audio/files',
+    batch_size = 1,
+    data_max_length = 320 * 32,
+    num_train_steps = 1
+)
+
+trainer.train()

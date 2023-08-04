@@ -352,3 +352,19 @@ class MuLaNTrainer(nn.Module):
             log_fn(logs)
 
         self.print('training complete')
+
+
+def main():
+    model = ...
+    dataset = ...  
+    trainer = MuLaNTrainer(model, dataset)
+    
+    trainer.train()
+
+
+
+
+if __name__ == "__main__":
+    main()
+
+ 
